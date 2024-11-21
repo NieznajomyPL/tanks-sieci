@@ -9,17 +9,22 @@ from engine import terrains
 WIDTH, HEIGHT = 800, 600
 GRAVITY = 20
 
-def draw_terrain(terrain_surface, terrain):
-    
+def draw_terrain(terrain):
+    terrain_surface = pygame.Surface((WIDTH, HEIGHT))
+    terrain_surface.fill((0, 0, 0, 0))
     for row in range(len(terrain)):
         for col in range(len(terrain[0])):
             if terrain[row][col] == 1:
                 terrain_surface.set_at((col, row), (0, 255, 0))
     return terrain_surface
 
-def boom(objects, x, y, r):
+def boom(objects, terrain, x, y, r):
+    for i, row in enumerate(terrain):
+        for j, col in enumerate(row):
+            if (j - x) ** 2 + (i - y) ** 2 < r:
+                terrain[i][j] = 0
+            
     for go in objects:
-        
         dx = go.posx - x
         dy = go.posy - y
 
@@ -34,14 +39,14 @@ def boom(objects, x, y, r):
     for n in range(10):
         objects.append(game_objects.Debry(x, y))
 
-def handle_event(game_objects_list):
+def handle_event(game_objects_list, terrain):
     for event in pygame.event.get():
         if event.type == pygame.MOUSEBUTTONUP:
             pos = pygame.mouse.get_pos()
             if event.button == 1:
                 game_objects_list.append(game_objects.GameObject(pos[0], pos[1]))
             if event.button == 3:
-                boom(game_objects_list, pos[0], pos[1], 350)
+                boom(game_objects_list, terrain, pos[0], pos[1], 350)
 
         if event.type == pygame.QUIT:
             return False
@@ -65,7 +70,7 @@ def update_physics(game_objects_list, terrain, deltatime):
         responsey = 0
         collision = False
 
-        x = 4
+        x = 16
         for n in range(x+1):
             angle = (n*math.pi/x)+veloangle-math.pi/2
 
@@ -110,9 +115,8 @@ win = pygame.display.set_mode((WIDTH, HEIGHT))
 
 def main():
     terrain = terrains.generate_level(WIDTH, HEIGHT, terrain_seed=100)
-    terrain_surface = pygame.Surface((WIDTH, HEIGHT))
-    terrain_surface.fill((0, 0, 0, 0))
-    terrain_surface = draw_terrain(terrain_surface, terrain)
+
+    terrain_surface = draw_terrain(terrain)
 
     clock = pygame.time.Clock()
     run = True
@@ -123,7 +127,9 @@ def main():
         t = clock.tick(60)
         deltatime = t / 1000
 
-        run = handle_event(game_objects_list)
+        terrain_surface = draw_terrain(terrain)
+
+        run = handle_event(game_objects_list, terrain)
 
         win.fill((255, 255, 255))
         win.blit(terrain_surface, (0,0))
