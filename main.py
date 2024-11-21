@@ -45,7 +45,7 @@ def handle_event(game_objects_list, terrain):
         if event.type == pygame.MOUSEBUTTONUP:
             pos = pygame.mouse.get_pos()
             if event.button == 1:
-                game_objects_list.append(game_objects.GameObject(pos[0], pos[1]))
+                game_objects_list.append(game_objects.Missile(pos[0], pos[1]))
             if event.button == 3:
                 boom(game_objects_list, terrain, pos[0], pos[1], 100)
                 status = [True, True]
@@ -67,6 +67,7 @@ def update_physics(game_objects_list, terrain, deltatime):
         go.stable = False
 
         veloangle = math.atan2(go.veloy, go.velox)
+        go.angle = veloangle
         responsex = 0
         responsey = 0
         collision = False
@@ -103,7 +104,7 @@ def update_physics(game_objects_list, terrain, deltatime):
 
             if go.bounce_before > 0:
                 go.bounce_before -= 1
-                go.dead = go.bounce_before == 0
+            go.dead = go.bounce_before == 0
         else:
             go.posx = potencialx
             go.posy = potencialy
