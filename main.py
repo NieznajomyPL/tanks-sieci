@@ -21,7 +21,7 @@ def draw_terrain(terrain):
 def boom(objects, terrain, x, y, r):
     for i, row in enumerate(terrain):
         for j, col in enumerate(row):
-            if (j - x) ** 2 + (i - y) ** 2 < r:
+            if (j - x) ** 2 + (i - y) ** 2 < r*4:
                 terrain[i][j] = 0
             
     for go in objects:
@@ -40,17 +40,18 @@ def boom(objects, terrain, x, y, r):
         objects.append(game_objects.Debry(x, y))
 
 def handle_event(game_objects_list, terrain):
+    status = [True, False]
     for event in pygame.event.get():
         if event.type == pygame.MOUSEBUTTONUP:
             pos = pygame.mouse.get_pos()
             if event.button == 1:
                 game_objects_list.append(game_objects.GameObject(pos[0], pos[1]))
             if event.button == 3:
-                boom(game_objects_list, terrain, pos[0], pos[1], 350)
-
+                boom(game_objects_list, terrain, pos[0], pos[1], 100)
+                status = [True, True]
         if event.type == pygame.QUIT:
-            return False
-    return True
+            return [False, False]
+    return status
 
 def update_physics(game_objects_list, terrain, deltatime):
     for go in game_objects_list:
@@ -127,9 +128,9 @@ def main():
         t = clock.tick(60)
         deltatime = t / 1000
 
-        terrain_surface = draw_terrain(terrain)
-
-        run = handle_event(game_objects_list, terrain)
+        run, is_update_terrain = handle_event(game_objects_list, terrain)
+        if is_update_terrain:
+            terrain_surface = draw_terrain(terrain)
 
         win.fill((255, 255, 255))
         win.blit(terrain_surface, (0,0))
