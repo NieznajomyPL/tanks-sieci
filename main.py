@@ -85,6 +85,8 @@ def update_physics(game_objects_list, terrain, deltatime):
         
         magvelo = math.sqrt(go.velox*go.velox + go.veloy*go.veloy)
         magresponse = math.sqrt(responsex*responsex+responsey*responsey)
+        if magresponse < 0.005:
+            magresponse = 0.005
 
         if collision:
             go.stable = True
