@@ -41,7 +41,7 @@ def handle_event(game_objects_list):
             if event.button == 1:
                 game_objects_list.append(game_objects.GameObject(pos[0], pos[1]))
             if event.button == 3:
-                boom(game_objects_list, pos[0], pos[1], 100)
+                boom(game_objects_list, pos[0], pos[1], 350)
 
         if event.type == pygame.QUIT:
             return False
@@ -50,8 +50,8 @@ def handle_event(game_objects_list):
 def update_physics(game_objects_list, terrain, deltatime):
     for go in game_objects_list:
         go.accy += GRAVITY
-        go.velox += go.accx * deltatime
-        go.veloy += go.accy * deltatime
+        go.velox += go.accx
+        go.veloy += go.accy
 
         potencialx = go.posx + go.velox * deltatime
         potencialy = go.posy + go.veloy * deltatime
@@ -68,7 +68,6 @@ def update_physics(game_objects_list, terrain, deltatime):
         x = 4
         for n in range(x+1):
             angle = (n*math.pi/x)+veloangle-math.pi/2
-            # print(angle)
 
             testposx = go.r * math.cos(angle) + potencialx
             testposy = go.r * math.sin(angle) + potencialy
