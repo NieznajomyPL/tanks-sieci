@@ -44,7 +44,8 @@ def handle_event(game_objects_list):
                 boom(game_objects_list, pos[0], pos[1], 100)
 
         if event.type == pygame.QUIT:
-            run = False
+            return False
+    return True
 
 def update_physics(game_objects_list, terrain, deltatime):
     for go in game_objects_list:
@@ -121,7 +122,7 @@ def main():
         t = clock.tick(60)
         deltatime = t / 1000
 
-        handle_event(game_objects_list)
+        run = handle_event(game_objects_list)
 
         win.fill((255, 255, 255))
         win.blit(terrain_surface, (0,0))
