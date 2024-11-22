@@ -122,11 +122,12 @@ class Missile(GameObject):
     def __init__(self, x, y):
         super().__init__(x, y)
         self.radius = 7
-        self.fricion = 0.6
+        self.fricion = 0
         self.bounce_before = 0
 
     def after_death(self, objects, terrain):
         boom(objects, terrain, self.posx, self.posy, 30)
+        pass
         
     def draw(self, win):
         # pygame.draw.line(win, (255, 255, 255), (self.posx, self.posy), (self.posx + self.radius* math.cos(self.angle), self.posy + self.radius* math.sin(self.angle)), width=3)
@@ -146,6 +147,32 @@ class Missile(GameObject):
             ),
         )
 
+class Tank(GameObject):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.radius = 12
+        self.fricion = 0.3
+        
+        self.barrel_angle = 0
+        self.power = 5
+    
+    def fire(self, objects):
+        cosx = self.radius * math.cos(self.barrel_angle)
+        siny = self.radius * math.sin(self.barrel_angle)
+        missile = Missile(self.posx + cosx * self.radius/4, self.posy + siny * self.radius/4)
+        missile.velox = cosx * self.power
+        missile.veloy = siny * self.power
+        missile.angle = self.barrel_angle
+        objects.append(missile)
+    
+    def draw(self, win):
+        pygame.draw.circle(win, (0, 102, 0), (self.posx, self.posy), self.radius)
+        endx = self.posx + self.radius * math.cos(self.barrel_angle) * 1.5
+        endy = self.posy + self.radius * math.sin(self.barrel_angle) * 1.5
+        pygame.draw.line(win, (0, 102, 0), (self.posx, self.posy), (endx, endy), width=10)
+        pygame.draw.ellipse(win, (0, 130, 0), pygame.Rect(self.posx - self.radius*1.5, self.posy, self.radius*3, self.radius))
+        
+        
 
 def boom(objects, terrain, x, y, r):
     for i, row in enumerate(terrain):

@@ -1,6 +1,7 @@
 import pygame
 import math
 import random
+import time
 
 from engine import game_objects
 from engine import terrains
@@ -22,17 +23,26 @@ def draw_terrain(terrain):
 
 
 def handle_event(game_objects_list, terrain):
-    global run, is_update_terrain
+    global run, is_update_terrain, tank_control_by_player, mouse_pressed_time
+    pos = pygame.mouse.get_pos()
+    if tank_control_by_player is not None:
+        tank_control_by_player.barrel_angle = math.atan2(pos[1]- tank_control_by_player.posy, pos[0] - tank_control_by_player.posx )
     for event in pygame.event.get():
         if event.type == pygame.MOUSEBUTTONUP:
-            pos = pygame.mouse.get_pos()
             if event.button == 1:
-                game_objects_list.append(game_objects.Missile(pos[0], pos[1]))
+                if tank_control_by_player is not None:
+                    tank_control_by_player.power = (time.time() - mouse_pressed_time) * 2
+                    tank_control_by_player.fire(game_objects_list)
+                mouse_pressed_time = 0
             if event.button == 2:
-                game_objects_list.append(game_objects.GameObject(pos[0], pos[1]))
+                tank_control_by_player = game_objects.Tank(pos[0], pos[1])
+                game_objects_list.append(tank_control_by_player)
             if event.button == 3:
                 game_objects.boom(game_objects_list, terrain, pos[0], pos[1], 100)
                 is_update_terrain = True
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                mouse_pressed_time = time.time()
         if event.type == pygame.QUIT:
             run = False
 
@@ -41,10 +51,12 @@ pygame.init()
 win = pygame.display.set_mode((WIDTH, HEIGHT))
 is_update_terrain = False
 run = True
+tank_control_by_player = None
+mouse_pressed_time = 0
 
 def main():
     global is_update_terrain
-    terrain = terrains.generate_level(WIDTH, HEIGHT, terrain_seed=100)
+    terrain = terrains.generate_level(WIDTH, HEIGHT, terrain_seed=2137)
 
     terrain_surface = draw_terrain(terrain)
 
