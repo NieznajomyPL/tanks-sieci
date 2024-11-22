@@ -2,15 +2,18 @@ import pygame
 import math
 import random
 
+
 class GameObject:
     def __init__(self, x, y):
-        self.r = 15
+        self.radius = 15
+
         self.posx = x
         self.posy = y
         self.velox = 0.0
         self.veloy = 0.0
         self.accx = 0.0
         self.accy = 0.0
+
         self.stable = True
         self.angle = 0
         self.fricion = 0.8
@@ -18,33 +21,149 @@ class GameObject:
         self.bounce_before = -1
         self.dead = False
 
+        self.gravity = 20
+        self.collison_points = 16
+        self.phycics_accuracy = 5
+
+    def after_death(self, game_objects, terrain):
+        pass
+
+    def detect_collision(self, potencialx, potencialy, terrain):
+        responsex = 0
+        responsey = 0
+        collision = False
+
+        for n in range(self.collison_points + 1):
+            point_angle = (n * math.pi / self.collison_points) + self.angle - math.pi / 2
+
+            testposx = self.radius* math.cos(point_angle) + potencialx
+            testposy = self.radius* math.sin(point_angle) + potencialy
+
+            testposx = len(terrain[0]) - 1 if testposx >= len(terrain[0]) else testposx
+            testposy = len(terrain) - 1 if testposy >= len(terrain) else testposy
+
+            testposx = 0 if testposx < 0 else testposx
+            testposy = 0 if testposy < 0 else testposy
+
+            if terrain[int(testposy)][int(testposx)] != 0:
+                responsex += potencialx - testposx
+                responsey += potencialy - testposy
+                collision = True
+                
+        return collision, responsex, responsey
+        
+
+    def update_physics(self, terrain, deltatime):
+        for _ in range(self.phycics_accuracy):
+            self.accy += self.gravity
+            self.stable = False
+
+            self.velox += 0 if self.accx * deltatime < 0.0000000001 else self.accx * deltatime
+            self.veloy += 0 if self.accy * deltatime < 0.0000000001 else self.accy * deltatime
+            self.accx = 0
+            self.accy = 0
+
+            potencialx = 0 if self.posx + self.velox * deltatime < 0.0000001 else self.posx + self.velox * deltatime
+            potencialy = 0 if self.posy + self.veloy * deltatime < 0.0000001 else self.posy + self.veloy * deltatime
+
+            self.angle = math.atan2(self.veloy, self.velox)
+
+            collision, responsex, responsey = self.detect_collision(potencialx, potencialy, terrain)
+
+            magvelo = math.sqrt(self.velox * self.velox + self.veloy * self.veloy)
+            magresponse = math.sqrt(responsex * responsex + responsey * responsey)
+            if magresponse < 0.005:
+                magresponse = 0.005
+
+            if collision:
+                self.stable = True
+
+                dot = self.velox * (responsex / magresponse) + self.veloy * (responsey / magresponse)
+                self.velox = self.fricion * (-2 * dot * (responsex / magresponse) + self.velox)
+                self.veloy = self.fricion * (-2 * dot * (responsey / magresponse) + self.veloy)
+
+                if self.bounce_before > 0:
+                    self.bounce_before -= 1
+                self.dead = self.bounce_before == 0
+            else:
+                self.posx = potencialx
+                self.posy = potencialy
+
+            if magvelo < 0.05:
+                self.stable = True
+
     def draw(self, win):
-        pygame.draw.circle(win, (255, 0, 0), (self.posx, self.posy), self.r)
-        pygame.draw.line(win, (255, 255, 255), (self.posx, self.posy), (self.posx + self.r * math.cos(self.angle), self.posy + self.r * math.sin(self.angle)))
+        pygame.draw.circle(win, (255, 0, 0), (self.posx, self.posy), self.radius)
+        endx = self.posx + self.radius * math.cos(self.angle)
+        endy = self.posy + self.radius * math.sin(self.angle)
+        pygame.draw.line(win, (255, 255, 255), (self.posx, self.posy), (endx, endy))
+        
+        my_font = pygame.font.SysFont('Comic Sans MS', 30)
+        text_surface = my_font.render(f"({self.velox}, {self.veloy})", False, (255, 255, 255))
+        win.blit(text_surface, (0,0))
+
 
 class Debry(GameObject):
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.r = 4
+        self.radius = 4
         self.fricion = 0.6
         self.bounce_before = 5
 
-        angle = random.uniform(0, math.pi*2)
+        angle = random.uniform(0, math.pi * 2)
         self.velox = math.cos(angle) * random.uniform(80, 150)
         self.veloy = math.sin(angle) * random.uniform(80, 150)
 
     def draw(self, win):
-        pygame.draw.circle(win, (0, 255, 0), (self.posx, self.posy), self.r)
+        pygame.draw.circle(win, (0, 255, 0), (self.posx, self.posy), self.radius)
+
 
 class Missile(GameObject):
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.r = 7
+        self.radius = 7
         self.fricion = 0.6
         self.bounce_before = 0
 
+    def after_death(self, objects, terrain):
+        boom(objects, terrain, self.posx, self.posy, 30)
+        
     def draw(self, win):
-        # pygame.draw.line(win, (255, 255, 255), (self.posx, self.posy), (self.posx + self.r * math.cos(self.angle), self.posy + self.r * math.sin(self.angle)), width=3)
-        pygame.draw.polygon(win, (255, 0, 0), ((self.posx, self.posy), 
-            (self.posx - 2 * self.r * math.cos(self.angle + math.pi/8), self.posy - 2 * self.r * math.sin(self.angle + math.pi/8)), 
-            (self.posx - 2 * self.r * math.cos(self.angle - math.pi/8), self.posy - 2 * self.r * math.sin(self.angle - math.pi/8))))
+        # pygame.draw.line(win, (255, 255, 255), (self.posx, self.posy), (self.posx + self.radius* math.cos(self.angle), self.posy + self.radius* math.sin(self.angle)), width=3)
+        pygame.draw.polygon(
+            win,
+            (255, 0, 0),
+            (
+                (self.posx, self.posy),
+                (
+                    self.posx - 2 * self.radius* math.cos(self.angle + math.pi / 8),
+                    self.posy - 2 * self.radius* math.sin(self.angle + math.pi / 8),
+                ),
+                (
+                    self.posx - 2 * self.radius* math.cos(self.angle - math.pi / 8),
+                    self.posy - 2 * self.radius* math.sin(self.angle - math.pi / 8),
+                ),
+            ),
+        )
+
+
+def boom(objects, terrain, x, y, r):
+    for i, row in enumerate(terrain):
+        for j, col in enumerate(row):
+            if (j - x) ** 2 + (i - y) ** 2 < r * r:
+                terrain[i][j] = 0
+
+    for go in objects:
+        dx = x - go.posx 
+        dy = y - go.posy
+
+        dist = math.sqrt(dx * dx + dy * dy)
+        dist = 0.0001 if dist < 0.0001 else dist
+
+        if dist < r:
+            go.velox = (dx / dist) * r
+            go.veloy = (dy / dist) * r
+            go.stable = False
+
+    for n in range(10):
+        objects.append(Debry(x, y))
