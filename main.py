@@ -31,7 +31,7 @@ def handle_event(game_objects_list, terrain):
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 if tank_control_by_player is not None:
-                    tank_control_by_player.power = (time.time() - mouse_pressed_time) * 2
+                    tank_control_by_player.power = max (2, (time.time() - mouse_pressed_time) * 4)
                     tank_control_by_player.fire(game_objects_list)
                 mouse_pressed_time = 0
             if event.button == 2:
