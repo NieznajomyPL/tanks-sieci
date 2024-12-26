@@ -10,6 +10,7 @@ class Terrain:
         self.seed = seed
         self.width = width
         self.height = height
+        self.min_h = (height * 0.1)/height
 
     @staticmethod
     def empty_terrain(width, height):
@@ -24,7 +25,8 @@ class Terrain:
             noise((col / self.width, 0)) + noise2((col / self.width, 0)) * 0.5 for col in range(self.width)
         ]
         global_valley = abs(min(heights))
-        heights = list(map(lambda x: x + global_valley, heights))
+
+        heights = list(map(lambda x: x + global_valley + self.min_h, heights))
 
         for col in range(self.width):
             h = heights[col] * self.height
@@ -44,15 +46,15 @@ class Terrain:
                 if (j - x) ** 2 + (i - y) ** 2 < r * r:
                     self.terrain[i][j] = 0
 
-        pygame.draw.circle(self.surface, pygame.Color(0, 0, 0, 0), (x, y), r)
+        pygame.draw.circle(self.surface, pygame.Color(0, 0, 0, 255), (x, y), r)
 
     def draw_terrain(self):
         self.surface = pygame.Surface((self.width, self.height))
-        self.surface.fill((0, 0, 0, 0))
+        self.surface.fill((0, 0, 0, 255))
         for row in range(len(self.terrain)):
             for col in range(len(self.terrain[0])):
                 if self.terrain[row][col] == 1:
-                    self.surface.set_at((col, row), (0, 255, 0))
+                    self.surface.set_at((col, row), (0, 255, 0, 0))
         return self.surface
     
     def get_terrain_surface(self):

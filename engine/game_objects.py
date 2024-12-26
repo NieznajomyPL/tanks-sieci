@@ -14,7 +14,7 @@ class GameObject:
         self.accx = 0.0
         self.accy = 0.0
 
-        self.stable = True
+        self.stable = False
         self.angle = 0
         self.fricion = 0.8
 
@@ -111,7 +111,7 @@ class Debry(GameObject):
         super().__init__(x, y)
         self.radius = 4
         self.fricion = 0.6
-        self.bounce_before = 5
+        self.bounce_before = 4
 
         angle = random.uniform(0, math.pi * 2)
         self.velox = math.cos(angle) * random.uniform(80, 150)
@@ -127,11 +127,11 @@ class Missile(GameObject):
         self.radius = 7
         self.fricion = 0
         self.bounce_before = 0
-        self.power = 40
+        self.blast_power = 40
 
     def after_death(self, game_engine):
-        game_engine.terrain.boom(game_engine, self.posx, self.posy, self.power)
-        boom(game_engine, self.posx, self.posy, self.power)
+        game_engine.terrain.boom(game_engine, self.posx, self.posy, self.blast_power)
+        boom(game_engine, self.posx, self.posy, self.blast_power)
         
     def draw(self, dispaly):
         # pygame.draw.line(dispaly, (255, 255, 255), (self.posx, self.posy), (self.posx + self.radius* math.cos(self.angle), self.posy + self.radius* math.sin(self.angle)), width=3)
@@ -158,14 +158,25 @@ class Tank(GameObject):
         self.fricion = 0.3
         
         self.barrel_angle = 0
-        self.power = 5
+        self.shoot_power = 5
+
+        self.health = 10
     
+    def after_death(self, game_engine):
+        game_engine.terrain.boom(game_engine, self.posx, self.posy, 50)
+        boom(game_engine, self.posx, self.posy, 50)
+
+    def get_damage(self, damage):
+        self.health -= damage
+        if self.health <= 0:
+            self.dead = True
+
     def fire(self, objects):
         cosx = self.radius * math.cos(self.barrel_angle)
         siny = self.radius * math.sin(self.barrel_angle)
         missile = Missile(self.posx + cosx * self.radius/4, self.posy + siny * self.radius/4)
-        missile.velox = cosx * self.power
-        missile.veloy = siny * self.power
+        missile.velox = cosx * self.shoot_power
+        missile.veloy = siny * self.shoot_power
         missile.angle = self.barrel_angle
         objects.append(missile)
     
@@ -175,21 +186,28 @@ class Tank(GameObject):
         endy = self.posy + self.radius * math.sin(self.barrel_angle) * 1.5
         pygame.draw.line(dispaly, (0, 102, 0), (self.posx, self.posy), (endx, endy), width=10)
         pygame.draw.ellipse(dispaly, (0, 130, 0), pygame.Rect(self.posx - self.radius*1.5, self.posy, self.radius*3, self.radius))
+
+        my_font = pygame.font.SysFont('Comic Sans MS', 30)
+        text_surface = my_font.render(f"({self.health})", False, (255, 255, 255))
+        dispaly.blit(text_surface, (0,0))
+
         
         
 
 def boom(game_engine, x, y, r):
     objects = game_engine.game_objects_list
     for go in objects:
-        dx = x - go.posx 
-        dy = y - go.posy
+        dx = go.posx - x
+        dy = go.posy - y
 
         dist = math.sqrt(dx * dx + dy * dy)
         dist = 0.0001 if dist < 0.0001 else dist
 
         if dist < r:
-            go.velox = -(dx / dist) * r
-            go.veloy = -(dy / dist) * r
+            if isinstance(go, Tank):
+                go.get_damage((1/dist)*r)
+            go.velox = (dx / dist) * (1/dist)*r*10
+            go.veloy = (dy / dist) * (1/dist)*r*10
             go.stable = False
 
     for n in range(10):
